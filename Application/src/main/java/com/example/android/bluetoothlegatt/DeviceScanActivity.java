@@ -250,7 +250,20 @@ public class DeviceScanActivity extends ListActivity {
             new BluetoothAdapter.LeScanCallback() {
 
         @Override
-        public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
+        public void onLeScan(final BluetoothDevice device,final int rssi, final byte[] scanRecord) {
+            if(scanRecord.length < 21 ) return ;
+            String scanRecordStr = "" ;
+            for( int ri=5;ri<21;++ri){
+                scanRecordStr = String.format("%02x",scanRecord[ri]) + scanRecordStr;
+            }
+
+            String uuid = SampleGattAttributes.genuuid_flowerpower(0xfa, 0x0).replace("-", "") ;
+            if( !scanRecordStr.equals(uuid)) return ;
+
+            // Flower power found.
+            String[] mac = device.getAddress().split(":") ;
+            String systemID = mac[3]+":"+mac[4]+":"+mac[5] ;
+
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {

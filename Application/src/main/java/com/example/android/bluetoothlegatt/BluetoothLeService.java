@@ -32,6 +32,9 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -144,8 +147,37 @@ public class BluetoothLeService extends Service {
             final byte[] data = characteristic.getValue();
             if (data != null && data.length > 0) {
                 final StringBuilder stringBuilder = new StringBuilder(data.length);
-                for(byte byteChar : data)
-                    stringBuilder.append(String.format("%02X ", byteChar));
+
+                String uuid = characteristic.getUuid().toString() ;
+                int uid = Integer.parseInt(uuid.substring(4,8),16) ;
+                switch( uid ) {
+                    case 0x2a19 : // 1-byte percent
+                        stringBuilder.append( data[0]+"%" ) ;
+                        break ;
+                    /*case 0x2a29 : // string
+                        for( int di=0;di<data.length;++di)
+                            stringBuilder.append(Character.toString((char)(data[di]))) ;
+                        break ;*/
+                    // float32
+                    case 0xfa09 :
+                    case 0xfa0a :
+                    case 0xfa0b :
+                    case 0xfa0c :
+                    case 0xfa0d :
+                    case 0xfa0e :
+                            try {
+                                byte[] data_rev = {data[3], data[2], data[1], data[0]};
+                                float fval = new DataInputStream(new ByteArrayInputStream(data_rev)).readFloat();
+                                stringBuilder.append(fval);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        break ;
+                    default:
+                            for (byte byteChar : data)
+                                stringBuilder.append(String.format("%02X ", byteChar));
+                        break ;
+                }
                 intent.putExtra(EXTRA_DATA, new String(data) + "\n" + stringBuilder.toString());
             }
         }
